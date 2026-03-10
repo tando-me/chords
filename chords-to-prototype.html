@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en" style="scroll-behavior: smooth;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chords.to — Bitcoin Circular Economy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg-card: #12121a;
+    --bg-hover: #1a1a26;
+    --btc-orange: #f7931a;
+    --btc-orange-dim: rgba(247, 147, 26, 0.35);
+    --fiat-green: #4ade80;
+    --fiat-green-dim: rgba(74, 222, 128, 0.3);
+    --leak-red: #ef4444;
+    --leak-red-dim: rgba(239, 68, 68, 0.15);
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8693;
+    --text-muted: #5a5666;
+    --border: #1f1f2e;
+    --surface: #16161f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(247, 147, 26, 0.04) 0%, transparent 60%),
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 100% 100%, 60px 60px, 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 2rem 3rem;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  h1 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--btc-orange), #fbbf24, var(--btc-orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.4rem;
+    line-height: 1.15;
+  }
+
+  .subtitle {
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle strong {
+    font-weight: 700;
+    color: var(--btc-orange);
+  }
+
+  .header-h2 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── Community Banner ── */
+  .community-banner {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .banner-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .community-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .community-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+  }
+
+  .community-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .banner-health {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .health-top-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .health-pct-lg {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .health-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .health-gradient-wrap {
+    position: relative;
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+
+  .health-gradient-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+
+  .health-gradient-labels .label-fiat { color: #4ade80; }
+  .health-gradient-labels .label-btc { color: #f7931a; }
+
+  .health-gradient-bar {
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #4ade80, #a3c44a, #f7931a);
+    position: relative;
+  }
+
+  .health-arrow {
+    position: absolute;
+    top: -8px;
+    transform: translateX(-50%);
+    transition: left 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    filter: drop-shadow(0 0 3px rgba(0,0,0,0.6));
+  }
+
+  .health-arrow svg {
+    display: block;
+  }
+
+  .stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .stat-chip .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .stat-chip strong { font-weight: 700; }
+
+  .stat-chip.btc {
+    background: rgba(247, 147, 26, 0.08);
+    border: 1px solid rgba(247, 147, 26, 0.15);
+  }
+  .stat-chip.btc .dot { background: var(--btc-orange); }
+  .stat-chip.btc strong { color: var(--btc-orange); }
+
+  .stat-chip.leak {
+    background: var(--leak-red-dim);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: var(--leak-red);
+    animation: pulse-leak 3s ease-in-out infinite;
+  }
+  .stat-chip.leak .dot { background: var(--leak-red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
+  .stat-chip.leak strong { color: var(--leak-red); }
+
+  @keyframes pulse-leak {
+    0%, 100% { border-color: rgba(239, 68, 68, 0.25); }
+    50% { border-color: rgba(239, 68, 68, 0.5); }
+  }
+
+  a.stat-chip {
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  a.stat-chip:hover {
+    border-color: rgba(239, 68, 68, 0.6);
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-group {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .toggle-btn {
+    padding: 0.5rem 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toggle-btn.active {
+    background: var(--btc-orange);
+    color: var(--bg);
+  }
+
+  .toggle-btn:hover:not(.active) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  /* ── Chord Diagram (full width) ── */
+  .diagram-wrap {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem;
+    width: 100%;
+    max-width: 760px;
+    aspect-ratio: 1;
+    margin: 0 auto 1.5rem;
+  }
+
+  .diagram-wrap svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  /* ── Chart Legend (footer below diagram) ── */
+  .chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.5rem 0 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .legend-line {
+    width: 22px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  .legend-line.btc-line {
+    background: #f7931a;
+  }
+
+  .legend-line.fiat-line {
+    background: repeating-linear-gradient(
+      90deg,
+      #4ade80 0px, #4ade80 4px,
+      transparent 4px, transparent 7px
+    );
+    height: 3px;
+  }
+
+  .legend-grad {
+    width: 22px;
+    height: 8px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #4ade80, #f7931a);
+  }
+
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* ── Bottom Panels ── */
+  .bottom-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .panel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    scroll-margin-top: 1rem;
+  }
+
+  .panel-card h3 {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .panel-card .panel-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+
+  .panel-card.flash {
+    animation: panel-flash 1.2s ease-out;
+  }
+
+  @keyframes panel-flash {
+    0% { border-color: var(--leak-red); box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); }
+    100% { border-color: var(--border); box-shadow: none; }
+  }
+
+  /* ── Leakage list ── */
+  .leakage-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .leakage-item:last-child { border-bottom: none; }
+
+  .leakage-info { display: flex; flex-direction: column; gap: 0.15rem; }
+
+  .leakage-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .leakage-detail {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+  }
+
+  .leakage-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .badge-leak {
+    background: var(--leak-red-dim);
+    color: var(--leak-red);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .badge-gap {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+  }
+
+  /* ── Vendor list ── */
+  .vendor-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .vendor-list-item:hover { background: var(--bg-hover); }
+
+  .vendor-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .vendor-list-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .vendor-list-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+  }
+
+  /* ── Tooltip ── */
+  .chord-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.8rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.15s;
+    max-width: 280px;
+  }
+
+  .chord-tooltip.visible { opacity: 1; }
+  .tooltip-title { font-weight: 600; margin-bottom: 0.35rem; font-size: 0.85rem; }
+
+  .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+
+  .tooltip-row span:last-child {
+    font-family: 'Space Mono', monospace;
+    color: var(--text-primary);
+  }
+
+  .tooltip-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .tooltip-status.btc { color: var(--btc-orange); }
+  .tooltip-status.fiat { color: var(--leak-red); }
+
+  /* ── Detail overlay ── */
+  .detail-overlay {
+    display: none;
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    z-index: 10;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+    max-height: 45%;
+    overflow-y: auto;
+  }
+
+  .detail-overlay.visible { display: block; }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .detail-header h4 { font-size: 1rem; font-weight: 600; }
+
+  .detail-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.15s;
+  }
+
+  .detail-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .detail-businesses { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  .detail-biz {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    background: var(--surface);
+    border-radius: 6px;
+    font-size: 0.82rem;
+  }
+
+  .detail-biz .biz-icon { font-size: 1rem; }
+  .detail-biz .biz-name { flex: 1; font-weight: 500; }
+  .detail-biz .biz-btc {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+
+  .biz-btc.yes { background: rgba(247, 147, 26, 0.15); color: var(--btc-orange); }
+  .biz-btc.no { background: var(--leak-red-dim); color: var(--leak-red); }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .bottom-panels { grid-template-columns: 1fr; }
+    .community-banner { padding: 1rem; }
+    .banner-top { flex-direction: column; align-items: flex-start; }
+    h1 { font-size: 2rem; }
+    .subtitle { font-size: 1rem; }
+    .diagram-wrap { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>Visualizing Bitcoin Circular Economy Health</h1>
+    <h2 class="header-h2">Stop Leaking Value to Fiat!</h2>
+    <div class="subtitle">See the gaps. <strong>Close the loop.</strong></div>
+  </header>
+
+  <div class="community-banner">
+    <div class="banner-top">
+      <div>
+        <h4 class="community-title">₿ Nairobi BTC Circle</h4>
+        <div class="community-meta">Nairobi, Kenya · 12 vendor types · 34 businesses</div>
+      </div>
+      <div class="community-stats">
+        <div class="stat-chip btc">
+          <span class="dot"></span>
+          <strong id="btc-count">0</strong> BTC links
+        </div>
+        <a href="#leakage-panel" class="stat-chip leak">
+          <span class="dot"></span>
+          <strong id="fiat-count">0</strong> Fiat leaks ↓
+        </a>
+      </div>
+    </div>
+    <div class="banner-health">
+      <div class="health-top-row">
+        <span class="health-pct-lg" id="health-pct">0%</span>
+        <span class="health-label">of supply chains fulfilled in BTC</span>
+      </div>
+      <div class="health-gradient-wrap">
+        <div class="health-gradient-labels">
+          <span class="label-fiat">0% BTC</span>
+          <span class="label-btc">100% BTC</span>
+        </div>
+        <div class="health-gradient-bar">
+          <div class="health-arrow" id="health-arrow" style="left: 0%">
+            <svg width="14" height="24" viewBox="0 0 14 24">
+              <polygon points="7,0 14,10 7,7 0,10" fill="white"/>
+              <line x1="7" y1="7" x2="7" y2="24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="toggle-group">
+      <button class="toggle-btn active" data-filter="all">All Connections</button>
+      <button class="toggle-btn" data-filter="leakage">Leakage Only</button>
+      <button class="toggle-btn" data-filter="btc">BTC Only</button>
+    </div>
+  </div>
+
+  <div class="diagram-wrap">
+    <svg id="chord-svg"></svg>
+    <div class="detail-overlay" id="detail-panel">
+      <div class="detail-header">
+        <h4 id="detail-title">Vendor Type</h4>
+        <button class="detail-close" id="detail-close">×</button>
+      </div>
+      <div class="detail-businesses" id="detail-list"></div>
+    </div>
+  </div>
+
+  <div class="chart-legend">
+    <div class="legend-item">
+      <span class="legend-line btc-line"></span>
+      <span>BTC covered</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-line fiat-line"></span>
+      <span>Fiat leak</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-grad"></span>
+      <span>Arc BTC health</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-swatch" style="background: #5a5666"></span>
+      <span>No vendors</span>
+    </div>
+  </div>
+
+  <div class="bottom-panels">
+    <div class="panel-card" id="leakage-panel">
+      <h3>Top Leakage Points</h3>
+      <p class="panel-desc">These types of vendors are leaking value back into the fiat economy. Consider approaching them and bringing them into the Bitcoin circular economy to close the loop. Keep the value of bitcoin in your community!</p>
+      <div id="leakage-list"></div>
+    </div>
+    <div class="panel-card">
+      <h3>Vendor Types</h3>
+      <div id="vendor-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="chord-tooltip" id="tooltip"></div>
+
+<script>
+// ============================================================
+// MOCK DATA
+// ============================================================
+const vendorTypes = [
+  { id: 0, name: "Butcher", icon: "🥩", businesses: [
+    { name: "Mama Nyama Meats", btc: true },
+    { name: "Westlands Butchery", btc: true },
+    { name: "Prime Cuts Kenya", btc: false }
+  ]},
+  { id: 1, name: "Grocer", icon: "🥬", businesses: [
+    { name: "Fresh Mama Market", btc: true },
+    { name: "Green Garden Stores", btc: true },
+    { name: "Nairobi Greens", btc: true },
+    { name: "Kilimani Fresh", btc: false }
+  ]},
+  { id: 2, name: "Baker", icon: "🍞", businesses: [
+    { name: "Mama Chapati", btc: true },
+    { name: "Nairobi Bakers Co.", btc: true }
+  ]},
+  { id: 3, name: "Café / Restaurant", icon: "☕", businesses: [
+    { name: "Bitcoiners Brew", btc: true },
+    { name: "Sats Café Westlands", btc: true },
+    { name: "The Orange Pill Bistro", btc: true },
+    { name: "Kilimani Coffee House", btc: true },
+    { name: "Mama Jiko Kitchen", btc: false }
+  ]},
+  { id: 4, name: "Farmer", icon: "🌾", businesses: [
+    { name: "Kiambu Highland Farm", btc: true },
+    { name: "Rift Valley Produce", btc: true },
+    { name: "Thika Road Poultry", btc: false }
+  ]},
+  { id: 5, name: "Transport / Delivery", icon: "🚛", businesses: [
+    { name: "BodaBTC Riders", btc: true },
+    { name: "Sats Express Delivery", btc: true }
+  ]},
+  { id: 6, name: "Packaging Supplier", icon: "📦", businesses: [
+    { name: "NBO Packaging Ltd", btc: false }
+  ]},
+  { id: 7, name: "Equipment / Tools", icon: "🔧", businesses: []},
+  { id: 8, name: "Landlord / Rent", icon: "🏠", businesses: [
+    { name: "Westlands Properties", btc: false },
+    { name: "Kilimani Commercial", btc: false }
+  ]},
+  { id: 9, name: "Utility Provider", icon: "⚡", businesses: [
+    { name: "Kenya Power (via BTC bill pay)", btc: true }
+  ]},
+  { id: 10, name: "Cleaning / Supplies", icon: "🧹", businesses: []},
+  { id: 11, name: "Marketing / Design", icon: "📱", businesses: [
+    { name: "Sats Studio", btc: true },
+    { name: "Pixel & Chain Design", btc: true }
+  ]}
+];
+
+const dependencies = [
+  [0, 4, 3, true], [0, 7, 2, false], [0, 6, 2, false], [0, 5, 1, true], [0, 8, 3, false],
+  [1, 4, 4, true], [1, 5, 3, true], [1, 6, 2, false], [1, 8, 4, false], [1, 10, 1, false],
+  [2, 4, 2, true], [2, 1, 2, true], [2, 7, 1, false], [2, 6, 2, false], [2, 9, 2, true],
+  [3, 0, 4, true], [3, 1, 5, true], [3, 2, 3, true], [3, 8, 5, false], [3, 9, 4, true], [3, 10, 2, false], [3, 11, 3, true],
+  [4, 5, 2, true], [4, 7, 3, false], [4, 9, 3, true],
+  [5, 9, 2, true], [5, 8, 2, false],
+  [6, 5, 1, true], [6, 8, 1, false],
+  [11, 9, 2, true], [11, 3, 1, true],
+];
+
+const n = vendorTypes.length;
+
+// ============================================================
+// Build chord matrix
+// ============================================================
+const matrix = Array.from({ length: n }, () => Array(n).fill(0));
+const chordMeta = {};
+
+dependencies.forEach(([src, tgt, weight, hasBtc]) => {
+  matrix[src][tgt] = weight;
+  chordMeta[`${src}-${tgt}`] = { weight, hasBtc, src, tgt };
+});
+
+// Ensure pure-sink vendor types (no outbound, but have inbound) get an arc
+// by adding their total inbound weight to the diagonal
+for (let i = 0; i < n; i++) {
+  const rowSum = matrix[i].reduce((a, b) => a + b, 0);
+  if (rowSum === 0) {
+    const colSum = matrix.reduce((a, row) => a + row[i], 0);
+    if (colSum > 0) matrix[i][i] = colSum;
+  }
+}
+
+// ============================================================
+// Stats
+// ============================================================
+const btcLinks = dependencies.filter(d => d[3]).length;
+const fiatLinks = dependencies.filter(d => !d[3]).length;
+const healthPct = Math.round((btcLinks / dependencies.length) * 100);
+
+document.getElementById('btc-count').textContent = btcLinks;
+document.getElementById('fiat-count').textContent = fiatLinks;
+
+setTimeout(() => {
+  document.getElementById('health-arrow').style.left = healthPct + '%';
+  document.getElementById('health-pct').textContent = healthPct + '%';
+}, 300);
+
+// ============================================================
+// Leakage report
+// ============================================================
+const leakageMap = {};
+dependencies.forEach(([src, tgt, weight, hasBtc]) => {
+  if (!hasBtc) {
+    if (!leakageMap[tgt]) leakageMap[tgt] = { affected: 0, sources: [] };
+    leakageMap[tgt].affected += weight;
+    leakageMap[tgt].sources.push(vendorTypes[src].name);
+  }
+});
+
+const leakageListData = Object.entries(leakageMap)
+  .map(([id, data]) => ({ ...data, id: +id, name: vendorTypes[+id].name }))
+  .sort((a, b) => b.affected - a.affected);
+
+const leakageEl = document.getElementById('leakage-list');
+leakageListData.forEach(item => {
+  const div = document.createElement('div');
+  div.className = 'leakage-item';
+  const hasBiz = vendorTypes[item.id].businesses.length > 0;
+  div.innerHTML = `
+    <div class="leakage-info">
+      <div class="leakage-name">${vendorTypes[item.id].icon} ${item.name}</div>
+      <div class="leakage-detail">${item.affected} businesses affected · ${hasBiz ? 'Fiat only' : 'No vendor exists'}</div>
+    </div>
+    <span class="leakage-badge ${hasBiz ? 'badge-leak' : 'badge-gap'}">${hasBiz ? '⚠ FIAT' : '✕ GAP'}</span>
+  `;
+  leakageEl.appendChild(div);
+});
+
+// ============================================================
+// Vendor list
+// ============================================================
+const vendorListEl = document.getElementById('vendor-list');
+vendorTypes.forEach(vt => {
+  let dotColor = '#5a5666';
+  if (vt.businesses.length > 0) {
+    const btcRatio = vt.businesses.filter(b => b.btc).length / vt.businesses.length;
+    const r = Math.round(74 + (247 - 74) * btcRatio);
+    const g = Math.round(222 + (147 - 222) * btcRatio);
+    const b = Math.round(128 + (26 - 128) * btcRatio);
+    dotColor = `rgb(${r}, ${g}, ${b})`;
+  }
+  const div = document.createElement('div');
+  div.className = 'vendor-list-item';
+  div.innerHTML = `
+    <span class="vendor-dot" style="background: ${dotColor}"></span>
+    <span class="vendor-list-name">${vt.icon} ${vt.name}</span>
+    <span class="vendor-list-count">${vt.businesses.length}</span>
+  `;
+  div.addEventListener('click', () => showDetail(vt));
+  vendorListEl.appendChild(div);
+});
+
+// ============================================================
+// D3 Chord Diagram
+// ============================================================
+const svg = d3.select('#chord-svg');
+const tooltip = document.getElementById('tooltip');
+
+let currentFilter = 'all';
+let flowInterval = null;
+
+function render(filter) {
+  currentFilter = filter;
+  if (flowInterval) { clearInterval(flowInterval); flowInterval = null; }
+  svg.selectAll('*').remove();
+
+  const svgEl = document.getElementById('chord-svg');
+  const rect = svgEl.getBoundingClientRect();
+  const size = Math.min(rect.width, rect.height);
+  if (size <= 0) return;
+
+  const labelMargin = Math.max(90, size * 0.13);
+  const outerRadius = size / 2 - labelMargin;
+  const innerRadius = outerRadius - Math.max(16, outerRadius * 0.07);
+
+  const g = svg
+    .attr('viewBox', `0 0 ${size} ${size}`)
+    .append('g')
+    .attr('transform', `translate(${size/2}, ${size/2})`);
+
+  // Filter matrix (preserve diagonal for sink arcs)
+  const filteredMatrix = matrix.map(row => [...row]);
+  if (filter !== 'all') {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) continue; // preserve diagonal (sink arc sizing)
+        const meta = chordMeta[`${i}-${j}`];
+        if (meta) {
+          if (filter === 'leakage' && meta.hasBtc) filteredMatrix[i][j] = 0;
+          if (filter === 'btc' && !meta.hasBtc) filteredMatrix[i][j] = 0;
+        }
+      }
+    }
+  }
+
+  const chord = d3.chord()
+    .padAngle(0.04)
+    .sortSubgroups(d3.descending)
+    .sortChords(d3.descending);
+
+  const chords = chord(filteredMatrix);
+  const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+  const ribbon = d3.ribbon().radius(innerRadius - 2);
+
+  function arcColor(i) {
+    const vt = vendorTypes[i];
+    if (vt.businesses.length === 0) return '#5a5666';
+    const btcRatio = vt.businesses.filter(b => b.btc).length / vt.businesses.length;
+    // Interpolate green (#4ade80) → orange (#f7931a) based on BTC ratio
+    const r = Math.round(74 + (247 - 74) * btcRatio);
+    const g_ = Math.round(222 + (147 - 222) * btcRatio);
+    const b_ = Math.round(128 + (26 - 128) * btcRatio);
+    return `rgb(${r}, ${g_}, ${b_})`;
+  }
+
+  // Arcs — show ALL groups including sinks
+  const groupG = g.append('g')
+    .selectAll('g')
+    .data(chords.groups.filter(d => d.value > 0))
+    .join('g')
+    .style('cursor', 'pointer');
+
+  groupG.append('path')
+    .attr('d', arc)
+    .attr('fill', d => arcColor(d.index))
+    .attr('stroke', 'none')
+    .attr('opacity', 0.9)
+    .on('mouseover', function(event, d) {
+      highlightGroup(d.index, g);
+      showGroupTooltip(event, d);
+    })
+    .on('mousemove', moveTooltip)
+    .on('mouseout', function() {
+      resetHighlight(g);
+      hideTooltip();
+    })
+    .on('click', (event, d) => showDetail(vendorTypes[d.index]));
+
+  // Labels
+  const fontSize = Math.max(10, Math.min(13, size / 55));
+  groupG.append('text')
+    .each(d => { d.angle = (d.startAngle + d.endAngle) / 2; })
+    .attr('dy', '0.35em')
+    .attr('transform', d => `
+      rotate(${(d.angle * 180 / Math.PI - 90)})
+      translate(${outerRadius + 14})
+      ${d.angle > Math.PI ? 'rotate(180)' : ''}
+    `)
+    .attr('text-anchor', d => d.angle > Math.PI ? 'end' : 'start')
+    .attr('font-family', 'DM Sans, sans-serif')
+    .attr('font-size', fontSize + 'px')
+    .attr('font-weight', 600)
+    .attr('fill', d => arcColor(d.index))
+    .text(d => vendorTypes[d.index].name);
+
+  // Flow dots layer (rendered above ribbons)
+  const flowLayer = g.append('g').attr('class', 'flow-dots');
+
+  // Helper: compute a point on the inner radius at a given angle
+  function arcMidpoint(startAngle, endAngle) {
+    const angle = (startAngle + endAngle) / 2 - Math.PI / 2;
+    return [Math.cos(angle) * (innerRadius - 2), Math.sin(angle) * (innerRadius - 2)];
+  }
+
+  // Create flow animation along a chord
+  function startFlow(d) {
+    stopFlow();
+    const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+                 chordMeta[`${d.target.index}-${d.source.index}`];
+    if (!meta) return;
+
+    const srcPt = arcMidpoint(d.source.startAngle, d.source.endAngle);
+    const tgtPt = arcMidpoint(d.target.startAngle, d.target.endAngle);
+    const color = meta.hasBtc ? '#f7931a' : '#4ade80';
+
+    function emitDot() {
+      const dot = flowLayer.append('circle')
+        .attr('cx', srcPt[0])
+        .attr('cy', srcPt[1])
+        .attr('r', 3)
+        .attr('fill', color)
+        .attr('opacity', 0.9)
+        .style('filter', `drop-shadow(0 0 3px ${color})`);
+
+      dot.transition()
+        .duration(800)
+        .ease(d3.easeCubicInOut)
+        .attr('cx', tgtPt[0])
+        .attr('cy', tgtPt[1])
+        .attr('r', 2)
+        .attr('opacity', 0)
+        .remove();
+    }
+
+    emitDot();
+    flowInterval = setInterval(emitDot, 300);
+  }
+
+  function stopFlow() {
+    if (flowInterval) { clearInterval(flowInterval); flowInterval = null; }
+    flowLayer.selectAll('*').remove();
+  }
+
+  // Ribbons
+  g.append('g')
+    .attr('class', 'ribbons')
+    .selectAll('path')
+    .data(chords.filter(d => d.source.value > 0 && d.source.index !== d.target.index))
+    .join('path')
+    .attr('d', ribbon)
+    .attr('fill', d => {
+      const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+                   chordMeta[`${d.target.index}-${d.source.index}`];
+      if (!meta) return 'rgba(255,255,255,0.05)';
+      return meta.hasBtc ? 'rgba(247, 147, 26, 0.45)' : 'rgba(74, 222, 128, 0.5)';
+    })
+    .attr('stroke', d => {
+      const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+                   chordMeta[`${d.target.index}-${d.source.index}`];
+      if (!meta) return 'transparent';
+      return meta.hasBtc ? 'rgba(247, 147, 26, 0.6)' : 'rgba(74, 222, 128, 0.8)';
+    })
+    .attr('stroke-width', d => {
+      const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+                   chordMeta[`${d.target.index}-${d.source.index}`];
+      return (meta && !meta.hasBtc) ? 1.2 : 0.5;
+    })
+    .attr('stroke-dasharray', d => {
+      const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+                   chordMeta[`${d.target.index}-${d.source.index}`];
+      return (meta && !meta.hasBtc) ? '4,3' : 'none';
+    })
+    .attr('opacity', 0.75)
+    .style('mix-blend-mode', 'screen')
+    .on('mouseover', function(event, d) {
+      d3.select(this).attr('opacity', 1).attr('stroke-width', 2);
+      startFlow(d);
+      showChordTooltip(event, d);
+    })
+    .on('mousemove', moveTooltip)
+    .on('mouseout', function(event, d) {
+      const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+                   chordMeta[`${d.target.index}-${d.source.index}`];
+      d3.select(this)
+        .attr('opacity', 0.75)
+        .attr('stroke-width', (meta && !meta.hasBtc) ? 1.2 : 0.5);
+      stopFlow();
+      hideTooltip();
+    });
+}
+
+// ============================================================
+// Interactions
+// ============================================================
+function highlightGroup(index, g) {
+  g.selectAll('.ribbons path')
+    .attr('opacity', d =>
+      d.source.index === index || d.target.index === index ? 1 : 0.08
+    );
+}
+
+function resetHighlight(g) {
+  g.selectAll('.ribbons path').attr('opacity', 0.75);
+}
+
+function showGroupTooltip(event, d) {
+  const vt = vendorTypes[d.index];
+  const btcCount = vt.businesses.filter(b => b.btc).length;
+  const inbound = dependencies.filter(dep => dep[1] === d.index).length;
+  const outbound = dependencies.filter(dep => dep[0] === d.index).length;
+
+  tooltip.innerHTML = `
+    <div class="tooltip-title">${vt.icon} ${vt.name}</div>
+    <div class="tooltip-row"><span>Businesses</span><span>${vt.businesses.length}</span></div>
+    <div class="tooltip-row"><span>Accept BTC</span><span>${btcCount}/${vt.businesses.length}</span></div>
+    <div class="tooltip-row"><span>Supplies to</span><span>${inbound} types</span></div>
+    <div class="tooltip-row"><span>Buys from</span><span>${outbound} types</span></div>
+    <div class="tooltip-status ${btcCount > 0 ? 'btc' : 'fiat'}">
+      ${btcCount > 0 ? '₿ BTC suppliers available' : '⚠ No BTC suppliers'}
+    </div>
+  `;
+  tooltip.classList.add('visible');
+  moveTooltip(event);
+}
+
+function showChordTooltip(event, d) {
+  const meta = chordMeta[`${d.source.index}-${d.target.index}`] ||
+               chordMeta[`${d.target.index}-${d.source.index}`];
+  if (!meta) return;
+  const src = vendorTypes[meta.src];
+  const tgt = vendorTypes[meta.tgt];
+
+  tooltip.innerHTML = `
+    <div class="tooltip-title">${src.icon} ${src.name} → ${tgt.icon} ${tgt.name}</div>
+    <div class="tooltip-row"><span>Businesses needing this</span><span>${meta.weight}</span></div>
+    <div class="tooltip-status ${meta.hasBtc ? 'btc' : 'fiat'}">
+      ${meta.hasBtc ? '₿ Covered — BTC suppliers exist' : '⚠ Leakage — must exit to fiat'}
+    </div>
+  `;
+  tooltip.classList.add('visible');
+  moveTooltip(event);
+}
+
+function moveTooltip(event) {
+  tooltip.style.left = (event.clientX + 16) + 'px';
+  tooltip.style.top = (event.clientY - 10) + 'px';
+}
+
+function hideTooltip() {
+  tooltip.classList.remove('visible');
+}
+
+function showDetail(vt) {
+  const panel = document.getElementById('detail-panel');
+  document.getElementById('detail-title').textContent = `${vt.icon} ${vt.name}`;
+  const list = document.getElementById('detail-list');
+  list.innerHTML = '';
+
+  if (vt.businesses.length === 0) {
+    list.innerHTML = `<div style="color: var(--text-secondary); font-size: 0.85rem; padding: 0.5rem 0;">
+      No businesses registered yet. <span style="color: #ef4444; font-weight: 600;">This is a gap!</span>
+    </div>`;
+  } else {
+    vt.businesses.forEach(biz => {
+      const div = document.createElement('div');
+      div.className = 'detail-biz';
+      div.innerHTML = `
+        <span class="biz-icon">${vt.icon}</span>
+        <span class="biz-name">${biz.name}</span>
+        <span class="biz-btc ${biz.btc ? 'yes' : 'no'}">${biz.btc ? '₿ BTC' : 'FIAT'}</span>
+      `;
+      list.appendChild(div);
+    });
+  }
+  panel.classList.add('visible');
+}
+
+document.getElementById('detail-close').addEventListener('click', () => {
+  document.getElementById('detail-panel').classList.remove('visible');
+});
+
+document.querySelector('a.stat-chip.leak').addEventListener('click', function() {
+  const panel = document.getElementById('leakage-panel');
+  panel.classList.remove('flash');
+  void panel.offsetWidth; // reflow to restart animation
+  panel.classList.add('flash');
+});
+
+document.querySelectorAll('.toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render(btn.dataset.filter);
+  });
+});
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => render(currentFilter), 200);
+});
+
+render('all');
+</script>
+
+</body>
+</html>
