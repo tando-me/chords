@@ -4,7 +4,9 @@
 
 chords.to maps the vendor relationships within a local Bitcoin economy as an interactive chord diagram — revealing exactly where merchants must exit to fiat because a BTC-accepting supplier doesn't yet exist.
 
-![chords.to chord diagram](docs/screenshot.png)
+[![chords.to chord diagram](docs/screenshot.png)](https://tando-me.github.io/chords/chords-to-prototype.html)
+
+**[Live Demo →](https://tando-me.github.io/chords/chords-to-prototype.html)**
 
 ---
 
@@ -25,7 +27,7 @@ chords.to makes these leaks visible so communities can close them.
 
 ## Demo
 
-Open `chords-to-prototype.html` in any browser to see the full interactive visualization with mock data — no server required.
+**[Live Demo →](https://tando-me.github.io/chords/chords-to-prototype.html)** — full interactive visualization with mock data, no server required.
 
 ---
 
