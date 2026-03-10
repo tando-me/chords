@@ -4,6 +4,8 @@
 
 chords.to maps the vendor relationships within a local Bitcoin economy as an interactive chord diagram — revealing exactly where merchants must exit to fiat because a BTC-accepting supplier doesn't yet exist.
 
+![chords.to chord diagram](docs/screenshot.png)
+
 ---
 
 ## The Problem
