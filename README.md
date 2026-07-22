@@ -1,5 +1,7 @@
 # chords.to
 
+> **STATUS: PARKED (2026-07-17, Jason)** — no active development planned; the phase plan below is preserved for whenever this revives. See `_Ecosystem/architecture/plans-registry.md`.
+
 **Visualize, diagnose, and fix supply chain leakage in Bitcoin circular economies.**
 
 chords.to maps the vendor relationships within a local Bitcoin economy as an interactive chord diagram — revealing exactly where merchants must exit to fiat because a BTC-accepting supplier doesn't yet exist.
